@@ -1,0 +1,12 @@
+[Unit]
+Description=MyRecBox Monitor Service
+Requires=docker.service
+After=docker.service
+
+[Service]
+User=MYUSER
+WorkingDirectory=/opt/monitor
+ExecStart=/usr/bin/python3 /opt/monitor/monitor.py
+
+[Install]
+WantedBy=multi-user.target

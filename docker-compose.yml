@@ -1,0 +1,32 @@
+version: "3"
+services:
+  influxdb:
+    image: influxdb:2.6.1
+    volumes:
+      - ./docker/influxdb/data/influxdb2:/var/lib/influxdb2
+      - ./docker/influxdb/data/config:/etc/influxdb2
+    ports:
+      - 8086:8086
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=myuser
+      - DOCKER_INFLUXDB_INIT_PASSWORD=mypassword
+      - DOCKER_INFLUXDB_INIT_ORG=myorgs
+      - DOCKER_INFLUXDB_INIT_BUCKET=mybucket
+      - DOCKER_INFLUXDB_INIT_RETENTION=90d
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-recmachine-token
+    restart: always
+  grafana:
+    image: grafana/grafana:9.2.13
+    hostname: grafana
+    volumes:
+      - ./docker/grafana/data:/var/lib/grafana
+    ports:
+      - "8090:8090"
+    user: root
+    environment:
+      - GF_SERVER_DOMAIN=localhost
+      - GF_SERVER_HTTP_PORT=8090
+      - GF_SERVER_PROTOCOL=http
+#      - GF_AUTH_ANONYMOUS_ENABLED=true
+    restart: always
