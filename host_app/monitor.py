@@ -151,15 +151,15 @@ def send_encoding_stat():
 
 
 ## Starting...
-print("CPU Usage:" + str(get_cpu_usage()))
-print("CPU Temp :" + str(get_cpu_temp() ))
-print("FreeSpace:" + str(get_free_space()))
-print("Memory   :" + str(get_mem_usage()))
-print("Recoding :" + str(get_recording_total(epgstation_url)))
-print("Reserve  :" + str(get_reserve_count(epgstation_url)))
-ffmpeg_count, gst_count = get_encoding_status()
-print(" FFMPEG   :"+str(ffmpeg_count))
-print(" GSTREAMER:"+str(gst_count))
+#print("CPU Usage:" + str(get_cpu_usage()))
+#print("CPU Temp :" + str(get_cpu_temp() ))
+#print("FreeSpace:" + str(get_free_space()))
+#print("Memory   :" + str(get_mem_usage()))
+#print("Recoding :" + str(get_recording_total(epgstation_url)))
+#print("Reserve  :" + str(get_reserve_count(epgstation_url)))
+#ffmpeg_count, gst_count = get_encoding_status()
+#print(" FFMPEG   :"+str(ffmpeg_count))
+#print(" GSTREAMER:"+str(gst_count))
 while True:
   try:
     send_machine_stat()
