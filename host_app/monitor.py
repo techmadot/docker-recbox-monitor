@@ -15,7 +15,7 @@ bucket = "mybucket"
 ## 事前に設定したトークン.
 token = "my-recmachine-token"
 ## 録画ファイルを置くディレクトリ.
-record_dir = "/home/orangepi/EPGStation/recorded"
+record_dir = "/record-data"
 ## EPGStationが動作しているアドレス.
 epgstation_url="http://127.0.0.1:8888"
 
