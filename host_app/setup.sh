@@ -6,7 +6,8 @@ if [ -z $1 ]; then
   exit 1
 fi
 
-pip3 install influxdb-client
+sudo apt install python3-pip lm-sensors
+pip3 install influxdb-client requests
 
 ## 実行ユーザーの置換.
 sed -i -e "s/MYUSER/$1/" recbox-monitor.service
