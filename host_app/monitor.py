@@ -51,6 +51,16 @@ def get_mem_usage():
   usage = int((total - free) * 100 / total)
   return usage
 
+def get_mem_used():
+  with open('/proc/meminfo', 'r') as f:
+    meminfo = f.readlines()
+
+  total = int(meminfo[0].split()[1])
+  free = int(meminfo[2].split()[1])
+  usage = int((total - free))
+  return usage
+
+
 def get_cpu_temp():
   output = subprocess.check_output(['sensors']).decode('utf-8')
   temp_line = output.strip().split('\n')[-1]    # 最後のtemp1の行を取得
@@ -83,25 +93,18 @@ def get_reserve_count(url):
   reserve_count = data['normal']
   return reserve_count
 
-def check_existence(process_name):
-  try:
-    cmd = f"ps aux | grep {process_name} | wc -l"
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    return int(result.stdout)
-  except:
+def get_encoding_current(url):
+  endpoint = '/api/encode'
+  params = { 'isHalfWidth': True}
+  headers = {'accept': 'application/json'}
+  response = requests.get(url + endpoint, params=params, headers=headers)
+  data = json.loads(response.text)
+  items = data['runningItems']
+  if items is None:
     return 0
+  else:
+    return int(len(items))
 
-## エンコード処理の状況をチェック.
-def get_encoding_status():
-  exist_ffmpeg = check_existence('[f]fmpeg')
-  exist_gst = check_existence('[g]st-launch')
-  is_encoding = check_existence('[r]k-encode.js')
-
-  if is_encoding == 0:
-    exist_ffmpeg = 0
-    exist_gst = 0
-
-  return exist_ffmpeg, exist_gst
 
 ## マシン情報を送信
 def send_machine_stat():
@@ -113,6 +116,7 @@ def send_machine_stat():
       "cpu_usage": float(get_cpu_usage()),
       "cpu_temp" : float(get_cpu_temp()),
       "mem_usage": int(get_mem_usage()),
+      "mem_used" : int(get_mem_used()),
       "free_disk": int(get_free_space()),
     }
   }
@@ -128,22 +132,7 @@ def send_epgstation_stat():
     "fields" : {
       "recording": int(get_recording_total(epgstation_url)),
       "reserve" : int(get_reserve_count(epgstation_url)),
-    }
-  }
-  point = Point.from_dict(data)
-  write.write(bucket=bucket, record=point)
-
-## エンコーディングに関する情報を送信
-def send_encoding_stat():
-  client = InfluxDBClient(url=url, token=token, org=orgs)
-  write = client.write_api(write_options=SYNCHRONOUS)
-
-  ffmpeg_count, gst_count = get_encoding_status()
-  data = {
-    "measurement": "encode_task",
-    "fields" : {
-      "exist_ffmpeg": ffmpeg_count,
-      "exist_gst" : gst_count,
+      "encoding": int(get_encoding_current(epgstation_url)),
     }
   }
   point = Point.from_dict(data)
@@ -157,14 +146,10 @@ def send_encoding_stat():
 #print("Memory   :" + str(get_mem_usage()))
 #print("Recoding :" + str(get_recording_total(epgstation_url)))
 #print("Reserve  :" + str(get_reserve_count(epgstation_url)))
-#ffmpeg_count, gst_count = get_encoding_status()
-#print(" FFMPEG   :"+str(ffmpeg_count))
-#print(" GSTREAMER:"+str(gst_count))
 while True:
   try:
     send_machine_stat()
     send_epgstation_stat()
-    send_encoding_stat()
   except Exception as e:
     print(str(e))
 
