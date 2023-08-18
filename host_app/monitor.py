@@ -18,6 +18,8 @@ token = "my-recmachine-token"
 record_dir = "/record-data"
 ## EPGStationが動作しているアドレス.
 epgstation_url="http://127.0.0.1:8888"
+## Mirakurunが動作しているアドレス.
+mirakurun_url='http://127.0.0.1:40772'
 
 def get_cpu_usage():
   with open('/proc/stat', 'r') as f:
@@ -105,6 +107,29 @@ def get_encoding_current(url):
   else:
     return int(len(items))
 
+def get_tuners_info(mirakurun_url):
+    endpoint= '/api/tuners'
+    headers = {'accept': 'application/json'}
+    response = requests.get(mirakurun_url + endpoint, headers=headers)
+    data = json.loads(response.text)
+
+    tuners = []
+    if data is not None:
+        for tuner in data:
+            device_name = tuner['name']
+            status = 0 if tuner['isFree'] == True else -1
+            users = tuner['users']
+            if status < 0:
+                if tuner['isFault'] == True or tuner['isAvailable'] == False:
+                    status = -1 ## NotAvailableOrError
+                elif users:
+                    priority = max([x['priority'] for x in users ])
+                    status = 1 if priority < 0 else 2  ## '2'の場合にはチューナーがユーザーによって使用中.
+            tuners.append( { 'device_name': device_name, 'status': status } )
+        return tuners
+    else:
+        return None
+
 
 ## マシン情報を送信
 def send_machine_stat():
@@ -138,6 +163,26 @@ def send_epgstation_stat():
   point = Point.from_dict(data)
   write.write(bucket=bucket, record=point)
 
+## チューナーデバイス状態を送信
+def send_tuner_devinfo():
+  tuners = get_tuners_info(mirakurun_url)
+  if tuners is None:
+    return
+  client = InfluxDBClient(url=url, token=token, org=orgs)
+  write = client.write_api(write_options=SYNCHRONOUS)
+  for tuner in tuners:
+    data = {
+      "measurement" : "tunerstate",
+      "tags" : {
+        "device": tuner['device_name']
+      },
+      "fields": {
+        "status": tuner["status"]
+      }
+    }
+    point = Point.from_dict(data)
+    write.write(bucket=bucket, record=point)
+
 
 ## Starting...
 #print("CPU Usage:" + str(get_cpu_usage()))
@@ -150,6 +195,7 @@ while True:
   try:
     send_machine_stat()
     send_epgstation_stat()
+    send_tuner_devinfo()
   except Exception as e:
     print(str(e))
 
