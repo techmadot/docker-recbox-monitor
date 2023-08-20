@@ -32,4 +32,5 @@ if [ -e $HOME/EPGStation/config/config.yml ]; then
   FINISH_CMD="recordingFinishCommand: '/usr/bin/python  /opt/monitor/check_tsfile.py'"
   echo $FINISH_CMD >> $HOME/EPGStation/config/config.yml
 fi
+pm2 restart EPGStation
 
