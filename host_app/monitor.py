@@ -120,11 +120,17 @@ def get_tuners_info(mirakurun_url):
             status = 0 if tuner['isFree'] == True else -1
             users = tuner['users']
             if status < 0:
-                if tuner['isFault'] == True or tuner['isAvailable'] == False:
-                    status = -1 ## NotAvailableOrError
+                if tuner['isAvailable'] == False:
+                  status = -1 ## Warn:
+                elif tuner['isFault'] == True:
+                  status = -2 ## Critical(need restart)
                 elif users:
                     priority = max([x['priority'] for x in users ])
                     status = 1 if priority < 0 else 2  ## '2'の場合にはチューナーがユーザーによって使用中.
+
+            if tuner['isFree'] == False and tuner['isAvailable'] == False and tuner['isUsing'] == False and tuner['isFault'] == False:
+              status = -2  ## 全てのステータスがFalseになる異常ケースがあり、回復不可能なためCritical.
+            
             tuners.append( { 'device_name': device_name, 'status': status } )
         return tuners
     else:
