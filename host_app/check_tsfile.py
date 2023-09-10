@@ -36,16 +36,17 @@ basetime = os.getenv('STARTAT', default=0)
 channel_id = os.getenv('CHANNELID', default=0)
 channel_name = os.getenv('CHANNELNAME', 'Unknown')
 
+## EPGStationのUNIXTIMEはミリ秒単位のため、秒単位へ変換.
+basetime_seconds = int(int(basetime) / 1000)
+
 def check_tspacket():
-    global basetime, infile, channel_id
+    global basetime_seconds, infile, channel_id
     if infile is None:
         print('File not found')
         return None
 
-    ## EPGStationのUNIXTIMEはミリ秒単位のため、秒単位へ変換.
-    basetime = int(int(basetime) / 1000)
 
-    cmd = ['/usr/local/bin/chktspkt', '-j', '-b', str(basetime), '-m', str(infile) ]
+    cmd = ['/usr/local/bin/chktspkt', '-j', '-b', str(basetime_seconds), '-m', str(infile) ]
     print(str(cmd))
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode == 0:
@@ -56,7 +57,7 @@ def check_tspacket():
         return None
 
 def send_tsinfo(data):
-    global basetime, infile, channel_name, channel_id
+    global basetime_seconds, infile, channel_name, channel_id
 
     client = InfluxDBClient(url=url, token=token, org=orgs)
     write = client.write_api(write_options=SYNCHRONOUS)
@@ -74,14 +75,17 @@ def send_tsinfo(data):
                 "channel" : int(channel_id),
             }
         }
-        write.write(bucket=bucket, record=point)
-    
+        try:
+            write.write(bucket=bucket, record=point)
+            print('OK')
+        except:
+            print(f'{dt}')
+
     summary = data['summary']
     if summary:
-        
         point = {
             "measurement" : "tsfile_info",
-            "time" : int(basetime) * 1000000,  # ms -> ns
+            "time" : int(basetime_seconds) * 1000000000,  # s -> ns
             "fields": {
                 "drop" : int(summary['drop']),
                 "error" : int(summary['error']),
